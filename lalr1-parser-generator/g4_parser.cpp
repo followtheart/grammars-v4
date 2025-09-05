@@ -72,8 +72,8 @@ void G4Parser::parse_rules(const std::string& content) {
     std::string processed_content = content;
     
     // 匹配规则: rule_name : alternatives ;
-    // 使用更强的正则表达式处理多行
-    std::regex rule_regex(R"((\w+)\s*:\s*(.*?)\s*;)", std::regex_constants::ECMAScript);
+    // 使用 [\s\S]*? 来匹配包括换行符在内的任何字符
+    std::regex rule_regex(R"((\w+)\s*:\s*([\s\S]*?)\s*;)", std::regex_constants::ECMAScript);
     
     std::string::const_iterator searchStart(processed_content.cbegin());
     std::smatch match;
@@ -85,6 +85,10 @@ void G4Parser::parse_rules(const std::string& content) {
         // 清理规则体 - 移除多余的空白和换行
         rule_body = std::regex_replace(rule_body, std::regex(R"(\s+)"), " ");
         rule_body = normalize_whitespace(rule_body);
+        
+        if (verbose_) {
+            std::cout << "Found rule: " << rule_name << " : " << rule_body << std::endl;
+        }
         
         if (is_lexer_rule_name(rule_name)) {
             parse_lexer_rule(rule_name + " : " + rule_body);

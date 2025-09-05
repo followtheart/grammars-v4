@@ -683,20 +683,53 @@ void CppCodeGenerator::write_goto_table(std::ofstream& out) {
     auto non_terminals = grammar_.symbol_table().get_nonterminals();
     std::vector<SymbolPtr> nt_vec(non_terminals.begin(), non_terminals.end());
     
+    // Sort to ensure consistent ordering: augmented start symbol first, then others alphabetically
+    std::sort(nt_vec.begin(), nt_vec.end(), [](const SymbolPtr& a, const SymbolPtr& b) {
+        // Put augmented start symbol first (contains ')
+        bool a_augmented = a->name().find('\'') != std::string::npos;
+        bool b_augmented = b->name().find('\'') != std::string::npos;
+        
+        if (a_augmented && !b_augmented) {
+            return true;
+        }
+        if (!a_augmented && b_augmented) {
+            return false;
+        }
+        return a->name() < b->name();
+    });
+    
     out << "const int " << class_name_ << "::GOTO_TABLE[][" << nt_vec.size() << "] = {\n";
     
-    for (int state = 0; state < table_->num_states(); ++state) {
+    if (verbose_) {
+        out << "    // Non-terminal order: ";
+        for (size_t i = 0; i < nt_vec.size(); ++i) {
+            if (i > 0) out << ", ";
+            out << nt_vec[i]->name() << "(" << i << ")";
+        }
+        out << "\n";
+        out << "    // Using same state ordering as display system (by state ID)\n";
+    }
+    
+    // CRITICAL FIX: Generate table in same order as display system - by state ID, not vector order
+    for (int state_id = 0; state_id < table_->num_states(); ++state_id) {
         out << "    { ";
         
         for (size_t i = 0; i < nt_vec.size(); ++i) {
             if (i > 0) out << ", ";
             
-            int goto_state = table_->get_goto(state, nt_vec[i]);
+            int goto_state = table_->get_goto(state_id, nt_vec[i]);
             out << std::setw(3) << goto_state;
+            
+            if (verbose_ && goto_state >= 0) {
+                std::cout << "Code-gen GOTO[" << state_id << "][" << nt_vec[i]->name() << "] = " << goto_state << std::endl;
+            }
         }
         
         out << " }";
-        if (state < table_->num_states() - 1) out << ",";
+        if (state_id < table_->num_states() - 1) out << ",";
+        if (verbose_) {
+            out << " // State " << state_id;
+        }
         out << "\n";
     }
     
@@ -706,18 +739,43 @@ void CppCodeGenerator::write_goto_table(std::ofstream& out) {
 void CppCodeGenerator::write_production_rules(std::ofstream& out) {
     out << "// Production left-hand sides\n";
     out << "const int " << class_name_ << "::PRODUCTION_LHS[] = {\n";
-    out << "    0, // Dummy for production 0\n";
+    // out << "    0, // Dummy for production 0\n";
     
     auto non_terminals = grammar_.symbol_table().get_nonterminals();
     std::vector<SymbolPtr> nt_vec(non_terminals.begin(), non_terminals.end());
     
-    // Sort to ensure consistent ordering: augmented start symbol first, then original start symbol
+    // Sort to ensure consistent ordering: augmented start symbol first, then others alphabetically
     std::sort(nt_vec.begin(), nt_vec.end(), [](const SymbolPtr& a, const SymbolPtr& b) {
         // Put augmented start symbol first (contains ')
-        if (a->name().find('\'') != std::string::npos && b->name().find('\'') == std::string::npos) {
+        bool a_augmented = a->name().find('\'') != std::string::npos;
+        bool b_augmented = b->name().find('\'') != std::string::npos;
+        
+        if (a_augmented && !b_augmented) {
             return true;
         }
-        if (b->name().find('\'') != std::string::npos && a->name().find('\'') == std::string::npos) {
+        if (!a_augmented && b_augmented) {
+            return false;
+        }
+        return a->name() < b->name();
+    });
+    
+    if (verbose_) {
+        out << "    // Non-terminal order: ";
+        for (size_t i = 0; i < nt_vec.size(); ++i) {
+            if (i > 0) out << ", ";
+            out << nt_vec[i]->name() << "(" << i << ")";
+        }
+        out << "\n";
+    }
+    std::sort(nt_vec.begin(), nt_vec.end(), [](const SymbolPtr& a, const SymbolPtr& b) {
+        // Put augmented start symbol first (contains ')
+        bool a_augmented = a->name().find('\'') != std::string::npos;
+        bool b_augmented = b->name().find('\'') != std::string::npos;
+        
+        if (a_augmented && !b_augmented) {
+            return true;
+        }
+        if (!a_augmented && b_augmented) {
             return false;
         }
         return a->name() < b->name();
@@ -733,7 +791,7 @@ void CppCodeGenerator::write_production_rules(std::ofstream& out) {
     
     out << "// Production lengths\n";
     out << "const int " << class_name_ << "::PRODUCTION_LENGTH[] = {\n";
-    out << "    0, // Dummy for production 0\n";
+    // out << "    0, // Dummy for production 0\n";
     
     for (const auto& production : grammar_.productions()) {
         out << "    " << production->length() << ", // " << production->to_string() << "\n";
@@ -804,6 +862,16 @@ std::string CppCodeGenerator::to_cpp_identifier(const std::string& name) {
 std::string CppCodeGenerator::to_token_name(const std::string& name) {
     std::string result = to_cpp_identifier(name);
     std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+    
+    // Handle C++ reserved words and common conflicts
+    if (result == "NULL") {
+        result = "NULL_TOKEN";
+    } else if (result == "TRUE") {
+        result = "TRUE_TOKEN";
+    } else if (result == "FALSE") {
+        result = "FALSE_TOKEN";
+    }
+    
     return result;
 }
 
@@ -1020,8 +1088,15 @@ void CppCodeGenerator::generate_lexer_source(const std::string& filename, const 
                 pattern = escaped;
             }
             
-            out << "    rules_.emplace_back(R\"(" << pattern << ")\", TokenType::" 
-                << token_name << ", \"" << symbol->name() << "\");\n";
+            // Use raw string literal for complex patterns, regular string for simple literals
+            if(token_name == "NUM" || token_name == "NUMBER" || token_name == "INT" || token_name == "ID" || token_name == "IDENTIFIER"
+                || token_name == "STRING") {
+                out << "    rules_.emplace_back(R\"(" << pattern << ")\", TokenType::" 
+                    << token_name << ", \"" << symbol->name() << "\");\n";
+            } else {
+                out << "    rules_.emplace_back(\"" << pattern << "\", TokenType::"
+                    << token_name << ", \"" << symbol->name() << "\");\n";
+            }
         }
     }
     
@@ -1197,7 +1272,7 @@ void CppCodeGenerator::generate_test_case(const std::string& filename, const std
         auto productions = grammar_.productions();
         if (!productions.empty()) {
             out << "    // Test case based on first production: " << productions[0]->to_string() << "\n";
-            out << "    run_test_case(\"sample input\", true);\n";
+            out << "    run_test_case(\"1+2*(3+4)\", true);\n";
             out << "    \n";
         }
         

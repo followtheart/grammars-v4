@@ -8,6 +8,7 @@
 #include "grammar.h"
 #include "lr_items.h"
 #include "parse_table.h"
+#include "cpp_codegen.h"
 #include "g4_parser.h"
 #include "cpp_codegen.h"
 
@@ -148,7 +149,7 @@ bool convert_g4_to_bnf(const std::string& input_file, const std::string& output_
     }
 }
 
-void run_demo() {
+void run_demo(const std::string& cpp_output_dir = "", bool verbose = false, bool show_table = false) {
     std::cout << "=== LALR(1) Parser Generator Demo ===\n\n";
     
     // Create simple calculator grammar
@@ -197,15 +198,31 @@ void run_demo() {
     
     auto table = generator.generate_table();
     
-    std::cout << "LALR(1) Parsing Table:\n";
-    table->print_table();
-    std::cout << "\n";
+    if (show_table) {
+        table->print_table();
+        std::cout << "\n";
+    }
     
     if (table->has_conflicts()) {
         std::cout << "Conflicts:\n";
         table->print_conflicts();
     } else {
         std::cout << "No conflicts found - grammar is LALR(1)!\n";
+        
+        // Generate C++ code if requested
+        if (!cpp_output_dir.empty()) {
+            std::cout << "Generating C++ parser code...\n";
+            CppCodeGenerator codegen(grammar, std::move(table));
+            codegen.set_verbose(verbose);
+            codegen.set_namespace("generated");
+            codegen.set_class_name("CalculatorParser");
+            
+            if (codegen.generate_parser("Calculator", cpp_output_dir)) {
+                std::cout << "C++ parser generated successfully in: " << cpp_output_dir << "\n";
+            } else {
+                std::cout << "Failed to generate C++ parser code.\n";
+            }
+        }
     }
     
     std::cout << "\n=== Demo Complete ===\n";
@@ -216,12 +233,13 @@ int main(int argc, char** argv) {
         print_usage(argv[0]);
         return 1;
     }
-    
+
     bool verbose = false;
     bool show_states = false;
     bool show_table = false;
     bool show_sets = false;
     bool analyze_mode = false;
+    bool demo_mode = false;
     std::string convert_bnf_file;
     std::string grammar_file;
     std::string cpp_output_dir;
@@ -234,8 +252,7 @@ int main(int argc, char** argv) {
             print_usage(argv[0]);
             return 0;
         } else if (arg == "--demo") {
-            run_demo();
-            return 0;
+            demo_mode = true;
         } else if (arg == "--verbose") {
             verbose = true;
         } else if (arg == "--show-states") {
@@ -269,6 +286,12 @@ int main(int argc, char** argv) {
         }
     }
     
+    // Handle demo mode
+    if (demo_mode) {
+        run_demo(cpp_output_dir, verbose, show_table);
+        return 0;
+    }
+    
     // 处理语法文件
     if (!grammar_file.empty()) {
         // 检查文件是否存在
@@ -287,7 +310,7 @@ int main(int argc, char** argv) {
         } else {
             process_g4_file(grammar_file, verbose, show_states, show_table, show_sets, cpp_output_dir);
         }
-    } else if (convert_bnf_file.empty() && !analyze_mode) {
+    } else if (convert_bnf_file.empty() && !analyze_mode && !demo_mode) {
         std::cerr << "Error: No grammar file specified\n";
         print_usage(argv[0]);
         return 1;
