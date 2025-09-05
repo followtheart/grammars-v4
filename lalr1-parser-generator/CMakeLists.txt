@@ -24,6 +24,7 @@ set(LALR1_SOURCES
     lr_items.cpp
     parse_table.cpp
     parser.cpp
+    g4_parser.cpp
 )
 
 add_library(lalr1_lib STATIC ${LALR1_SOURCES})
@@ -46,7 +47,7 @@ add_executable(test_safe
 )
 target_link_libraries(test_safe lalr1_lib)
 
-# Command-line tool
+# Command-line tool for G4 grammar processing
 add_executable(lalr1_tool
     lalr1_tool.cpp
 )
@@ -62,5 +63,6 @@ install(FILES
     lr_items.h
     parse_table.h
     parser.h
+    g4_parser.h
     DESTINATION include
 )

@@ -502,6 +502,16 @@ void Grammar::print_grammar() const {
     }
 }
 
+void Grammar::print_grammar_to_stream(std::ostream& out) const {
+    out << "# Grammar" << std::endl;
+    out << "# Start symbol: " << (start_symbol_ ? start_symbol_->name() : "none") << std::endl;
+    out << std::endl;
+    out << "# Productions:" << std::endl;
+    for (size_t i = 0; i < productions_.size(); ++i) {
+        out << productions_[i]->to_string() << std::endl;
+    }
+}
+
 void Grammar::print_first_sets() {
     std::cout << "FIRST sets:\n";
     for (const auto& nonterminal : symbol_table_.get_nonterminals()) {

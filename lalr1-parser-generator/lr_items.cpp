@@ -30,13 +30,13 @@ std::string LR0Item::to_string() const {
     
     for (size_t i = 0; i < production_->rhs().size(); ++i) {
         if (i == dot_position_) {
-            oss << " •";
+            oss << " .";
         }
         oss << " " << production_->rhs()[i]->name();
     }
     
     if (is_complete()) {
-        oss << " •";
+        oss << " .";
     }
     
     oss << "]";
@@ -86,13 +86,13 @@ std::string LR1Item::to_string() const {
     
     for (size_t i = 0; i < production_->rhs().size(); ++i) {
         if (i == dot_position_) {
-            oss << " •";
+            oss << " .";
         }
         oss << " " << production_->rhs()[i]->name();
     }
     
     if (is_complete()) {
-        oss << " •";
+        oss << " .";
     }
     
     oss << ", " << lookahead_->name() << "]";
@@ -124,7 +124,7 @@ LR0State::LR0State(int id, const LR0ItemSet& items) : id_(id), items_(items) {
 }
 
 bool LR0State::is_accepting() const {
-    // Check if any item is the augmented start production S' -> S • with dot at end
+    // Check if any item is the augmented start production S' -> S . with dot at end
     for (const auto& item : items_) {
         if (item.is_complete() && item.production()->lhs()->name().back() == '\'') {
             // This is the augmented start production
@@ -192,7 +192,7 @@ void LALRState::add_lookahead(const LR0Item& item, SymbolPtr lookahead) {
 }
 
 bool LALRState::is_accepting() const {
-    // Check if any LR(1) item is the augmented start production S' -> S • with dot at end
+    // Check if any LR(1) item is the augmented start production S' -> S . with dot at end
     for (const auto& item : items_) {
         if (item.is_complete() && item.production()->lhs()->name().back() == '\'') {
             return true;
@@ -241,7 +241,7 @@ bool LALRState::operator!=(const LALRState& other) const {
 
 // LR0Automaton implementation
 LR0Automaton::LR0Automaton(const Grammar& grammar) {
-    // Start with initial item [S' -> •S] where S' is the augmented start symbol
+    // Start with initial item [S' -> .S] where S' is the augmented start symbol
     auto start_production = grammar.productions()[0];  // Should be S' -> S
     LR0Item initial_item(start_production, 0);
     LR0ItemSet initial_set = {initial_item};

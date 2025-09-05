@@ -87,6 +87,7 @@ public:
     
     // Display
     void print_grammar() const;
+    void print_grammar_to_stream(std::ostream& out) const;
     void print_first_sets();
     void print_follow_sets();
 
