@@ -1,0 +1,14 @@
+# Simple Calculator Grammar
+# This demonstrates a basic calculator with addition and numbers
+
+# Grammar rules (BNF-style)
+E -> E + T
+E -> T
+T -> num
+
+# Start symbol
+start: E
+
+# Token definitions
+num: [0-9]+
++: \+
