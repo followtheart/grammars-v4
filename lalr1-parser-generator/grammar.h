@@ -64,9 +64,18 @@ public:
     std::set<SymbolPtr> first_set(const std::vector<SymbolPtr>& symbols);
     std::set<SymbolPtr> follow_set(SymbolPtr symbol);
     
+    // Const versions
+    std::set<SymbolPtr> first_set(SymbolPtr symbol) const;
+    std::set<SymbolPtr> first_set(const std::vector<SymbolPtr>& symbols) const;
+    std::set<SymbolPtr> follow_set(SymbolPtr symbol) const;
+    
     // Check if symbol derives epsilon
     bool derives_epsilon(SymbolPtr symbol);
     bool derives_epsilon(const std::vector<SymbolPtr>& symbols);
+    
+    // Const versions
+    bool derives_epsilon(SymbolPtr symbol) const;
+    bool derives_epsilon(const std::vector<SymbolPtr>& symbols) const;
     
     // Validate grammar
     bool is_valid() const;

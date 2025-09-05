@@ -21,15 +21,36 @@ set(LALR1_SOURCES
     lexer.cpp
     symbol.cpp
     grammar.cpp
+    lr_items.cpp
+    parse_table.cpp
+    parser.cpp
 )
 
 add_library(lalr1_lib STATIC ${LALR1_SOURCES})
 
-# Test executable
+# Test executables
 add_executable(test_basic
     test_basic.cpp
 )
 target_link_libraries(test_basic lalr1_lib)
+
+# Full LALR(1) parser test
+add_executable(test_lalr1
+    test_lalr1.cpp
+)
+target_link_libraries(test_lalr1 lalr1_lib)
+
+# Safe test without parser
+add_executable(test_safe
+    test_safe.cpp
+)
+target_link_libraries(test_safe lalr1_lib)
+
+# Command-line tool
+add_executable(lalr1_tool
+    lalr1_tool.cpp
+)
+target_link_libraries(lalr1_tool lalr1_lib)
 
 # Install rules
 install(TARGETS lalr1_lib DESTINATION lib)
@@ -38,5 +59,8 @@ install(FILES
     lexer.h
     symbol.h
     grammar.h
+    lr_items.h
+    parse_table.h
+    parser.h
     DESTINATION include
 )

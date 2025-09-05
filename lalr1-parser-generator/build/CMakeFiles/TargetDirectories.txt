@@ -1,8 +1,0 @@
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/lalr1_lib.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/test_basic.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/edit_cache.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/rebuild_cache.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/list_install_components.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/install.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/install/local.dir
-/home/runner/work/grammars-v4/grammars-v4/lalr1-parser-generator/build/CMakeFiles/install/strip.dir

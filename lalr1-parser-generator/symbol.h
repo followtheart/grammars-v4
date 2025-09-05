@@ -57,6 +57,10 @@ public:
     SymbolPtr get_epsilon();
     SymbolPtr get_end_of_input();
     
+    // Const versions
+    SymbolPtr get_epsilon() const;
+    SymbolPtr get_end_of_input() const;
+    
     // Lookup existing symbols
     SymbolPtr find_symbol(const std::string& name) const;
     

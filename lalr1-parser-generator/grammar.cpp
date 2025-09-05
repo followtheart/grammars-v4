@@ -170,6 +170,65 @@ std::set<SymbolPtr> Grammar::follow_set(SymbolPtr symbol) {
     return {};
 }
 
+// Const versions
+std::set<SymbolPtr> Grammar::first_set(SymbolPtr symbol) const {
+    if (!first_sets_computed_) {
+        const_cast<Grammar*>(this)->compute_first_sets();
+    }
+    
+    auto it = first_sets_.find(symbol);
+    if (it != first_sets_.end()) {
+        return it->second;
+    }
+    
+    return {};
+}
+
+std::set<SymbolPtr> Grammar::first_set(const std::vector<SymbolPtr>& symbols) const {
+    std::set<SymbolPtr> result;
+    
+    for (size_t i = 0; i < symbols.size(); ++i) {
+        auto first_i = first_set(symbols[i]);
+        
+        // Add all non-epsilon symbols from FIRST(symbols[i])
+        for (const auto& sym : first_i) {
+            if (!sym->is_epsilon()) {
+                result.insert(sym);
+            }
+        }
+        
+        // If symbols[i] doesn't derive epsilon, stop here
+        if (!derives_epsilon(symbols[i])) {
+            break;
+        }
+        
+        // If this is the last symbol and it derives epsilon, add epsilon to result
+        if (i == symbols.size() - 1 && derives_epsilon(symbols[i])) {
+            result.insert(symbol_table_.get_epsilon());
+        }
+    }
+    
+    // If all symbols derive epsilon, add epsilon
+    if (symbols.empty() || derives_epsilon(symbols)) {
+        result.insert(symbol_table_.get_epsilon());
+    }
+    
+    return result;
+}
+
+std::set<SymbolPtr> Grammar::follow_set(SymbolPtr symbol) const {
+    if (!follow_sets_computed_) {
+        const_cast<Grammar*>(this)->compute_follow_sets();
+    }
+    
+    auto it = follow_sets_.find(symbol);
+    if (it != follow_sets_.end()) {
+        return it->second;
+    }
+    
+    return {};
+}
+
 bool Grammar::derives_epsilon(SymbolPtr symbol) {
     if (!epsilon_computed_) {
         compute_epsilon_derivers();
@@ -180,6 +239,25 @@ bool Grammar::derives_epsilon(SymbolPtr symbol) {
 }
 
 bool Grammar::derives_epsilon(const std::vector<SymbolPtr>& symbols) {
+    for (const auto& symbol : symbols) {
+        if (!derives_epsilon(symbol)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Const versions
+bool Grammar::derives_epsilon(SymbolPtr symbol) const {
+    if (!epsilon_computed_) {
+        const_cast<Grammar*>(this)->compute_epsilon_derivers();
+    }
+    
+    auto it = epsilon_derivers_.find(symbol);
+    return it != epsilon_derivers_.end() && it->second;
+}
+
+bool Grammar::derives_epsilon(const std::vector<SymbolPtr>& symbols) const {
     for (const auto& symbol : symbols) {
         if (!derives_epsilon(symbol)) {
             return false;

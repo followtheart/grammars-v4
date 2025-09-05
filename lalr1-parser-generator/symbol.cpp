@@ -92,6 +92,14 @@ SymbolPtr SymbolTable::get_end_of_input() {
     return end_of_input_;
 }
 
+SymbolPtr SymbolTable::get_epsilon() const {
+    return epsilon_;
+}
+
+SymbolPtr SymbolTable::get_end_of_input() const {
+    return end_of_input_;
+}
+
 SymbolPtr SymbolTable::find_symbol(const std::string& name) const {
     for (const auto& symbol : symbols_) {
         if (symbol->name() == name) {

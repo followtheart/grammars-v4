@@ -1,2 +1,0 @@
-/usr/bin/ar qc liblalr1_lib.a CMakeFiles/lalr1_lib.dir/token.cpp.o CMakeFiles/lalr1_lib.dir/lexer.cpp.o CMakeFiles/lalr1_lib.dir/symbol.cpp.o CMakeFiles/lalr1_lib.dir/grammar.cpp.o
-/usr/bin/ranlib liblalr1_lib.a
