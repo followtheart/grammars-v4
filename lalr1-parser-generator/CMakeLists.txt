@@ -25,6 +25,7 @@ set(LALR1_SOURCES
     parse_table.cpp
     parser.cpp
     g4_parser.cpp
+    cpp_codegen.cpp
 )
 
 add_library(lalr1_lib STATIC ${LALR1_SOURCES})

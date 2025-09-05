@@ -48,6 +48,9 @@ public:
     // Get goto for state and nonterminal
     int get_goto(int state, SymbolPtr nonterminal) const;
     
+    // Get number of states
+    int num_states() const { return num_states_; }
+    
     // Check for conflicts
     bool has_conflicts() const;
     std::vector<std::string> get_conflicts() const;

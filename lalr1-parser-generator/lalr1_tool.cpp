@@ -9,6 +9,7 @@
 #include "lr_items.h"
 #include "parse_table.h"
 #include "g4_parser.h"
+#include "cpp_codegen.h"
 
 using namespace lalr1;
 
@@ -23,6 +24,7 @@ void print_usage(const char* program_name) {
     std::cout << "  --show-states       Show LALR(1) states\n";
     std::cout << "  --show-table        Show parsing table\n";
     std::cout << "  --show-sets         Show FIRST and FOLLOW sets\n";
+    std::cout << "  --generate-cpp DIR  Generate C++ parser code to directory DIR\n";
     std::cout << "  --verbose           Enable verbose output\n";
     std::cout << "\nExamples:\n";
     std::cout << "  " << program_name << " grammar.g4\n";
@@ -31,7 +33,8 @@ void print_usage(const char* program_name) {
 }
 
 void process_g4_file(const std::string& filename, bool verbose = false, 
-                     bool show_states = false, bool show_table = false, bool show_sets = false) {
+                     bool show_states = false, bool show_table = false, bool show_sets = false,
+                     const std::string& cpp_output_dir = "") {
     std::cout << "=== Processing ANTLR4 Grammar File ===\n";
     std::cout << "File: " << filename << "\n\n";
     
@@ -91,6 +94,33 @@ void process_g4_file(const std::string& filename, bool verbose = false,
             std::cout << "This grammar is NOT LALR(1).\n";
         } else {
             std::cout << "No conflicts found - grammar is LALR(1)!\n";
+            
+            // Generate C++ code if requested
+            if (!cpp_output_dir.empty()) {
+                std::cout << "Generating C++ parser code...\n";
+                
+                // Extract base name from filename
+                std::string base_name = filename;
+                size_t last_slash = base_name.find_last_of("/\\");
+                if (last_slash != std::string::npos) {
+                    base_name = base_name.substr(last_slash + 1);
+                }
+                size_t last_dot = base_name.find_last_of(".");
+                if (last_dot != std::string::npos) {
+                    base_name = base_name.substr(0, last_dot);
+                }
+                
+                CppCodeGenerator codegen(*grammar, std::shared_ptr<ParseTable>(table.release()));
+                codegen.set_verbose(verbose);
+                codegen.set_namespace("generated");
+                codegen.set_class_name(base_name + "Parser");
+                
+                if (codegen.generate_parser(base_name, cpp_output_dir)) {
+                    std::cout << "C++ parser generated successfully in: " << cpp_output_dir << "\n";
+                } else {
+                    std::cout << "Failed to generate C++ parser code.\n";
+                }
+            }
         }
         
     } catch (const std::exception& e) {
@@ -194,6 +224,7 @@ int main(int argc, char** argv) {
     bool analyze_mode = false;
     std::string convert_bnf_file;
     std::string grammar_file;
+    std::string cpp_output_dir;
     
     // 解析命令行参数
     for (int i = 1; i < argc; ++i) {
@@ -222,6 +253,13 @@ int main(int argc, char** argv) {
                 std::cerr << "Error: --convert-bnf requires output filename\n";
                 return 1;
             }
+        } else if (arg == "--generate-cpp") {
+            if (i + 1 < argc) {
+                cpp_output_dir = argv[++i];
+            } else {
+                std::cerr << "Error: --generate-cpp requires output directory\n";
+                return 1;
+            }
         } else if (!arg.empty() && arg[0] != '-') {
             grammar_file = arg;
         } else {
@@ -247,7 +285,7 @@ int main(int argc, char** argv) {
         } else if (analyze_mode) {
             analyze_g4_file(grammar_file);
         } else {
-            process_g4_file(grammar_file, verbose, show_states, show_table, show_sets);
+            process_g4_file(grammar_file, verbose, show_states, show_table, show_sets, cpp_output_dir);
         }
     } else if (convert_bnf_file.empty() && !analyze_mode) {
         std::cerr << "Error: No grammar file specified\n";
